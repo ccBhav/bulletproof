@@ -1,6 +1,6 @@
 # bulletproof
 
-A Claude Code skill encoding a domain-driven backend architecture: self-contained domains with entities, storage adapters, third-party gateways, useCase logic, and transport handlers, on top of a small platform layer and a single app composition root.
+A language-agnostic Claude Code skill encoding a domain-driven backend architecture: self-contained domains with entities, storage adapters, third-party gateways, useCase logic, and transport handlers, on top of a small platform layer and a single app composition root.
 
 ## What it does
 
@@ -47,28 +47,31 @@ Restart Claude Code to pick up the new skill.
 - `rules/api.md` — neutral filters, pagination, error envelope, versioning, read models (MEDIUM)
 - `rules/standards.md` — boundary linting, naming, tooling and CI gates (MEDIUM)
 - `rules/solid.md` — SOLID mapping and violation signs
+- `languages/*.md` — idiomatic layout, ports, errors, context, transactions, wiring, boundary-lint config, and framework traps for Go, TypeScript, Python, Java/Kotlin, and C#
+
+Rules in `rules/` are language-neutral (pseudocode). Claude detects the stack from `go.mod`, `package.json`, `pyproject.toml`, `pom.xml`/`build.gradle`, or `*.csproj` and loads the matching language file. To add a language, copy an existing `languages/*.md`, answer the same sections, and add its marker to the table in `SKILL.md`.
 
 ## Pattern summary
 
-    cmd/<binary>/          # entrypoint
+    <entrypoint>           # load config, call app.run
     app/                   # composition root: routes, middleware, lifecycle
     platform/              # shared kernel, imports no domain
     <domain>/
         entities/
         errors
-        storage            # interface
+        storage            # port
         storage/<impl>     # adapter
         storage/<impl>_dto # translation
-        gateway            # interface
+        gateway            # port
         gateway/<impl>
         gateway/<impl>_dto
         publisher          # optional event port
         useCase            # business logic
-        transport          # interface
+        transport          # port
         transport/<impl>   # rest, grpc, consumer, webhook, cron
         transport/<impl>_dto
         setup              # wiring
 
-Every adapter `<impl>` pairs with a sibling `<impl>_dto`.
+Every adapter `<impl>` pairs with a sibling `<impl>_dto`. Each entry is a unit of code ownership: directory, package, module, or namespace, per the language file.
 
-Hard rule: a domain may only import another domain's `entities`, `errors`, and `useCase` interface.
+Hard rule: a domain may only depend on another domain's `entities`, `errors`, and `useCase` interface.

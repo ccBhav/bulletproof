@@ -2,23 +2,19 @@
 
 ## api-neutral-filters
 
-Storage must not encode business rules, but it also must not force filtering in memory. Use neutral criteria objects declared in the domain:
+Storage must not encode business rules, but it must not force filtering in memory either. Use neutral criteria objects declared in the domain:
 
-```go
-type UserFilter struct {
-    Status         *string
-    Plan           *string
-    LastLoginAfter *time.Time
-    Page           platform.PageRequest
-}
-type UserStorage interface {
-    List(ctx context.Context, f UserFilter) (platform.Page[*entities.User], error)
-}
+```
+UserFilter { status?, plan?, lastLoginAfter?, page: PageRequest }
+
+port UserStorage
+  list(ctx, f: UserFilter) -> Page<User>
 ```
 
-- The useCase owns the **values** ("eligible = active + premium + seen in 30 days").
-- Storage owns the **translation** to SQL/indexes.
-- If a query needs a business-named method for performance, name it after the data shape, not the rule (`ListByStatusAndPlan`, not `GetEligibleUsers`).
+- useCase owns the **values** ("eligible = active + premium + seen in 30 days").
+- Storage owns the **translation** to SQL/indexes/ORM queries.
+- If a query needs a dedicated method for performance, name it after the data shape, not the rule (`listByStatusAndPlan`, not `getEligibleUsers`).
+- Do not expose ORM query builders or raw query fragments through the port.
 
 ## api-pagination
 
@@ -36,11 +32,11 @@ All HTTP endpoints return errors in one envelope produced by the transport error
 { "error": { "code": "card_declined", "message": "card was declined", "request_id": "..." } }
 ```
 
-`code` is the stable, machine-readable domain error code. `message` is safe for clients. No internals.
+`code` is the stable domain error code. `message` is safe for clients. No internals.
 
 ## api-versioning
 
-- Wire contracts (`transport/<impl>_dto`) are versioned by route prefix (`/v1`) or package (`rest/v1`, `rest/v2`).
+- Wire contracts (`transport/<impl>_dto`) are versioned by route prefix (`/v1`) or by a versioned adapter (`rest/v1`, `rest/v2`).
 - Breaking change → add a new version adapter alongside the old one (Open/Closed). Both call the same useCase.
 - Additive changes (new optional fields) do not need a new version.
 - Published event payloads follow the same rules.
